@@ -1,0 +1,230 @@
+var proj = ee.Projection(
+  'PROJCS["Asia_North_Lambert_Conformal_Conic",' +
+      'GEOGCS["WGS 84",' +
+          'DATUM["WGS_1984",' +
+              'SPHEROID["WGS 84",6378137,298.257223563,' +
+                  'AUTHORITY["EPSG","7030"]],' +
+              'AUTHORITY["EPSG","6326"]],' +
+          'PRIMEM["Greenwich",0,' +
+              'AUTHORITY["EPSG","8901"]],' +
+          'UNIT["degree",0.0174532925199433,' +
+              'AUTHORITY["EPSG","9122"]],' +
+          'AUTHORITY["EPSG","4326"]],' +
+      'PROJECTION["Lambert_Conformal_Conic_2SP"],' +
+      'PARAMETER["latitude_of_origin",30],' +
+      'PARAMETER["central_meridian",95],' +
+      'PARAMETER["standard_parallel_1",15],' +
+      'PARAMETER["standard_parallel_2",65],' +
+      'PARAMETER["false_easting",0],' +
+      'PARAMETER["false_northing",0],' +
+      'UNIT["metre",1,' +
+          'AUTHORITY["EPSG","9001"]],' +
+      'AXIS["Easting",EAST],' +
+      'AXIS["Northing",NORTH],' +
+      'AUTHORITY["ESRI","102027"]]'
+);
+
+// define variables for each test dataset for training and validating the model
+var test1a = ee.Geometry.Rectangle([75.5, 35.5, 76, 36.5]);
+var test1b = ee.Geometry.Rectangle([72, 38.5, 73, 39.5]);
+var test15a = ee.Geometry.Rectangle([75, 35.5, 76.5, 37]);
+var test15b = ee.Geometry.Rectangle([71.5, 38, 73, 39.5]);
+var test075a1 = ee.Geometry.Rectangle([75, 35.75, 76, 36.5]);
+var test075a2 = ee.Geometry.Rectangle([75.25, 35.75, 76, 36.5]);
+var test05a2 = ee.Geometry.Rectangle([75.25, 35.75, 76, 36.25]);
+var test075b2 = ee.Geometry.Rectangle([72, 38.5, 72.75, 39.25]);
+var test075b1 = ee.Geometry.Rectangle([72, 38.5, 73, 39.25]);
+var test05b2 = ee.Geometry.Rectangle([72, 38.75, 72.75, 39.25]);
+
+// define DEM extent for each test area
+var testa_area = ee.Geometry.Rectangle([74.9, 34.4, 77.6, 37.1]);
+var testb_area = ee.Geometry.Rectangle([70.4, 36.4, 74.1, 40.1]);
+
+// define DEM extent for each Central Asia subregions
+var tienshandem = ee.Geometry.Rectangle(68, 38.5, 97, 45.4);
+var pamirdem = ee.Geometry.Rectangle(70.1, 36.5, 76.3, 39.8);
+var wkunlundem = ee.Geometry.Rectangle(76.1, 34, 83.6, 37.7);
+var ekunlundem = ee.Geometry.Rectangle(83.6, 34, 100, 39);
+
+// define variables for each tile in RGI Central Asia subregions 03 and 04 (Tien Shan)
+var region0304_tile1 = ee.Geometry.Rectangle([70, 41.2, 72, 42.6]); 
+var region0304_tile2 = ee.Geometry.Rectangle([72, 41.2, 74, 42.6]); 
+var region0304_tile3 = ee.Geometry.Rectangle([74, 41.2, 76, 42.6]); 
+var region0304_tile4 = ee.Geometry.Rectangle(76, 40.5, 78, 42.5);
+var region0304_tile5 = ee.Geometry.Rectangle(78, 40.8, 80, 42.7);
+var region0304_tile6 = ee.Geometry.Rectangle(76, 42.7, 78.4, 43.3);
+var region0304_tile7 = ee.Geometry.Rectangle(73.7, 40.5, 76.0, 41.2);
+var region0304_tile8 = ee.Geometry.Rectangle(74.3, 40.2, 76.4, 40.5);
+var region0304_tile9 = ee.Geometry.Rectangle(74.7, 39.9, 75.1, 40.2);
+var region0304_tile10 = ee.Geometry.Rectangle(78.8, 44.3, 81.8, 45.5);
+var region0304_tile11 = ee.Geometry.Rectangle(80, 41.6, 82, 43.1);
+var region0304_tile12 = ee.Geometry.Rectangle(81.8, 43.4, 84, 44.4);
+var region0304_tile13 = ee.Geometry.Rectangle(82, 42, 84, 43.3);
+var region0304_tile14 = ee.Geometry.Rectangle(84, 42, 86, 43.2);
+var region0304_tile15 = ee.Geometry.Rectangle(84, 43.2, 86, 44.2);
+var region0304_tile16 = ee.Geometry.Rectangle(86, 42.5, 88, 43.7);
+var region0304_tile17 = ee.Geometry.Rectangle(88, 43.3, 90, 44.0);
+var region0304_tile18 = ee.Geometry.Rectangle(92.8, 42.9, 94.7, 43.6);
+
+// define variables for each tile in RGI Central Asia subregion 02 (Pamir Alay)
+var region02_tile1 = ee.Geometry.Rectangle(70.1, 36.5, 72.2, 38.1);
+var region02_tile2 = ee.Geometry.Rectangle(72.2, 36.5, 74.2, 38.1);
+var region02_tile3 = ee.Geometry.Rectangle(74.2, 36.5, 76.3, 38.1);
+var region02_tile4 = ee.Geometry.Rectangle(70.1, 38.1, 72.2, 39.8);
+var region02_tile5 = ee.Geometry.Rectangle(72.2, 38.1, 74.2, 39.8);
+var region02_tile6 = ee.Geometry.Rectangle(74.2, 38.1, 76.3, 39.8);
+
+// define variables for each tile in RGI Central Asia subregion 05 (W Kun Lun)
+var region05_tile1 = ee.Geometry.Rectangle(76.1, 36, 77.8, 37.6);
+var region05_tile2 = ee.Geometry.Rectangle(77.8, 35.4, 79.7, 36.9);
+var region05_tile3 = ee.Geometry.Rectangle(78.3, 34.3, 79.7, 35.4);
+var region05_tile4 = ee.Geometry.Rectangle(79.7, 35, 81.5, 36.2);
+var region05_tile5 = ee.Geometry.Rectangle(81.5, 35, 83.4, 36.6);
+
+// define variables for each tile in RGI Central Asia subregion 06 (E Kun Lun)
+var region06_tile1 = ee.Geometry.Rectangle(83.9, 36.4, 85.9, 37.4);
+var region06_tile2 = ee.Geometry.Rectangle(85.9, 36.1, 87.9, 38.1);
+var region06_tile3 = ee.Geometry.Rectangle(87.9, 36, 89.9, 37.2);
+var region06_tile4 = ee.Geometry.Rectangle(87.9, 37.2, 89.9, 38.4);
+var region06_tile5 = ee.Geometry.Rectangle(89.9, 35.7, 91.9, 37.3);
+var region06_tile6 = ee.Geometry.Rectangle(89.9, 37.3, 91.9, 38.9);
+var region06_tile7 = ee.Geometry.Rectangle(91.9, 35.5, 93.9, 36.4);
+var region06_tile8 = ee.Geometry.Rectangle(93.9, 35.5, 95.9, 36.1);
+var region06_tile9 = ee.Geometry.Rectangle(95.9, 35.3, 97.9, 36.0);
+var region06_tile10 = ee.Geometry.Rectangle(97.9, 35.5, 99.9, 36.3);
+
+
+// define area of interest to export data from
+var aoi = tienshandem;
+
+// select SRTM DEM, convert to float, calculate slope and aspect, and clip to aoi
+var DEM = ee.Image("USGS/SRTMGL1_003");
+var dem_30 = DEM.select('elevation');
+var demFloat = dem_30.toFloat();
+var dem = demFloat.clip(aoi).reproject(proj);
+
+// create start and end dates for landsat 7
+var landsat7Dates2000 = ee.DateRange('1999-06-01', '2010-09-30');
+var landsat7Dates2020 = ee.DateRange('2015-06-01', '2023-09-30');
+var calendarRange = ee.Filter.calendarRange(161, 273, 'day_of_year');
+
+// create landsat-7 image collection of aoi from 1999-2010
+var landsat72000 = ee.ImageCollection("LANDSAT/LE07/C02/T1_L2")
+  .filterBounds(aoi)
+  .filterDate(landsat7Dates2000)
+  .filter(calendarRange);
+
+// create landsat-7 image collection of aoi from 2015-2023
+var landsat2020 = ee.ImageCollection("LANDSAT/LE07/C02/T1_L2")
+  .filterBounds(aoi)
+  .filterDate(landsat7Dates2020)
+  .filter(calendarRange);
+  
+// cloud filter for each image collection
+// function to mask clouds using Landsat-7 QA band
+function maskLand7(image) {
+  // Bit 0 - Fill
+  // Bit 1 - Dilated Cloud
+  // Bit 2 - Unused
+  // Bit 3 - Cloud
+  // Bit 4 - Cloud Shadow
+  var qaMask = image.select('QA_PIXEL').bitwiseAnd(parseInt('11111', 2)).lte(5);
+  var saturationMask7 = image.select('QA_RADSAT').lte(5);
+
+  // Apply the scaling factors to the appropriate bands.
+  var opticalBands = image.select('SR_B.').multiply(0.0000275).add(-0.2);
+  var thermalBand = image.select('ST_B6').multiply(0.00341802).add(149.0);
+
+  // Replace the original bands with the scaled ones and apply the masks.
+  return image.addBands(opticalBands, null, true)
+      .addBands(thermalBand, null, true)
+      .updateMask(qaMask)
+      .updateMask(saturationMask7);
+}
+
+// map the cloud filter to each image collection
+var Mask2000 = landsat72000.map(maskLand7);
+var Mask2020 = landsat2020.map(maskLand7);
+
+// check how many figures in each mask
+print(Mask2000);
+print(Mask2020);
+
+// create median composite image for each image collection
+var composite2000 = Mask2000.median().clip(aoi).toFloat().reproject(proj);
+var composite2020 = Mask2020.median().clip(aoi).toFloat().reproject(proj);
+
+// split bands into two variables plus one individual band and select for export 
+var select2000_part1 = composite2000.select('SR_B1', 'SR_B2', 'SR_B3');
+var select2000_part2 = composite2000.select('SR_B4', 'SR_B5', 'SR_B7');
+var select2000_band2 = composite2000.select('SR_B2');
+
+var select2020_part1 = composite2020.select('SR_B1', 'SR_B2', 'SR_B3');
+var select2020_part2 = composite2020.select('SR_B4', 'SR_B5', 'SR_B7');
+var select2020_band2 = composite2020.select('SR_B2');
+
+
+// export 1999-2010 data
+  // Export select2000_part1, specifying the scale, region, and max pixels
+  Export.image.toDrive({
+    image: select2000_part1,
+    description: 'landsat7_part1',
+    scale:30,
+    folder: 'region06_tile10_2000',
+    maxPixels: 1892227573612,
+  });
+  
+  // Export select2000_part2, specifying the scale, region, and max pixels
+  Export.image.toDrive({
+    image: select2000_part2,
+    description: 'landsat7_part2',
+    scale:30,
+    folder: 'region06_tile10_2000',
+    maxPixels: 1892227573612,
+  });
+  
+  // Export select2000_band2, specifying the scale, region, and max pixels
+  Export.image.toDrive({
+    image: select2000_band2,
+    description: 'landsat7_band2',
+    scale:30,
+    folder: 'region06_tile10_2000',
+    maxPixels: 1892227573612,
+  });
+  
+// export 2015-2023 data
+  // Export select2020_part1, specifying the scale, region, and max pixels
+  Export.image.toDrive({
+    image: select2020_part1,
+    description: 'landsat7_part1',
+    scale:30,
+    folder: 'region06_tile10_2020',
+    maxPixels: 1892227573612,
+  });
+  
+  // Export select2020_part2, specifying the scale, region, and max pixels
+  Export.image.toDrive({
+    image: select2020_part2,
+    description: 'landsat7_part2',
+    scale:30,
+    folder: 'region06_tile10_2020',
+    maxPixels: 1892227573612,
+  });
+  
+  // Export select2020_band2, specifying the scale, region, and max pixels
+  Export.image.toDrive({
+    image: select2020_band2,
+    description: 'landsat7_band2',
+    scale:30,
+    folder: 'region06_tile10_2020',
+    maxPixels: 1892227573612,
+  });
+
+// Export DEM
+Export.image.toDrive({
+  image: dem,
+  description: 'tienshandem',
+  scale: 30,
+  folder: "tienshandem",
+  maxPixels: 1892227573612,
+}); 
